@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>האווטאר של שני</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #0f172a;
             color: #ffffff;
@@ -36,42 +32,34 @@
             border: 3px solid #38bdf8;
             overflow: hidden;
             background-color: #1e293b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        .avatar-box video, .avatar-box img {
+        .avatar-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.1s ease;
         }
-        .status-text {
-            font-size: 1.1rem;
-            color: #94a3b8;
-            text-align: center;
+        .speaking {
+            animation: pulseLip 0.25s infinite alternate;
         }
-        .controls {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        @keyframes pulseLip {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.04); }
         }
+        .status-text { font-size: 1.1rem; color: #94a3b8; text-align: center; }
         .btn {
             background-color: #0284c7;
             color: white;
             border: none;
             padding: 16px;
             border-radius: 12px;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
             box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
-        }
-        .btn:active {
-            transform: scale(0.98);
-            background-color: #0369a1;
         }
     </style>
 </head>
@@ -79,19 +67,87 @@
 
     <div class="container">
         <div class="avatar-box">
-            <img id="avatarDisplay" src="https://via.placeholder.com/280x280/1e293b/ffffff?text=Avatar" alt="Avatar">
+            <img id="avatarImg" src="20261107_153609.heic" alt="אבא">
         </div>
 
-        <div id="status" class="status-text">מוכן לשמיעה</div>
+        <div id="status" class="status-text">לחצי על הכפתור כדי להתחיל לדבר עם אבא</div>
 
-        <div class="controls">
-            <button class="btn" onclick="playAvatar()">הפעל הודעה</button>
-        </div>
+        <button id="startBtn" class="btn" onclick="initAvatar()">שלום אבא</button>
     </div>
 
+    <!-- נגני אודיו נסתרים -->
+    <audio id="audioGreeting" src="Greeting.m4a" preload="auto"></audio>
+    <audio id="audioComfort" src="Comfort.m4a" preload="auto"></audio>
+    <audio id="audioLove" src="Love.m4a" preload="auto"></audio>
+
     <script>
-        function playAvatar() {
-            document.getElementById('status').innerText = "מנגן...";
+        const avatarImg = document.getElementById('avatarImg');
+        const statusText = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+
+        const audioGreeting = document.getElementById('audioGreeting');
+        const audioComfort = document.getElementById('audioComfort');
+        const audioLove = document.getElementById('audioLove');
+
+        let recognition;
+
+        function initAvatar() {
+            startBtn.style.display = 'none';
+            playMyVoice(audioGreeting, () => {
+                setupRecognition();
+            });
+        }
+
+        function playMyVoice(audioElement, onEndCallback) {
+            avatarImg.classList.add('speaking');
+            statusText.innerText = "אבא מדבר...";
+
+            audioElement.play().catch(e => console.log("Audio play error:", e));
+
+            audioElement.onended = () => {
+                avatarImg.classList.remove('speaking');
+                statusText.innerText = "אבא מקשיב לך...";
+                if (onEndCallback) onEndCallback();
+            };
+        }
+
+        function setupRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                statusText.innerText = "המכשיר אינו תומך בזיהוי קולי כרגע";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'he-IL';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const userSpeech = event.results[0][0].transcript.toLowerCase();
+                statusText.innerText = 'שני אמרה: "' + userSpeech + '"';
+                respondToShani(userSpeech);
+            };
+
+            recognition.onerror = () => {
+                setTimeout(() => { 
+                    try { recognition.start(); } catch(e){}
+                }, 2000);
+            };
+
+            try { recognition.start(); } catch(e){}
+        }
+
+        function respondToShani(text) {
+            if (text.includes("עצב") || text.includes("עצובה") || text.includes("קשה") || text.includes("רע") || text.includes("בוכה") || text.includes("אבא")) {
+                playMyVoice(audioComfort, () => {
+                    setTimeout(() => { setupRecognition(); }, 1000);
+                });
+            } else {
+                playMyVoice(audioLove, () => {
+                    setTimeout(() => { setupRecognition(); }, 1000);
+                });
+            }
         }
     </script>
 
