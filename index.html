@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>האווטאר של שני</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .avatar-box {
+            width: 280px;
+            height: 280px;
+            border-radius: 20px;
+            border: 3px solid #38bdf8;
+            overflow: hidden;
+            background-color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .avatar-box video, .avatar-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .status-text {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+        .controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        .btn:active {
+            transform: scale(0.98);
+            background-color: #0369a1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="avatar-box">
+            <img id="avatarDisplay" src="https://via.placeholder.com/280x280/1e293b/ffffff?text=Avatar" alt="Avatar">
+        </div>
+
+        <div id="status" class="status-text">מוכן לשמיעה</div>
+
+        <div class="controls">
+            <button class="btn" onclick="playAvatar()">הפעל הודעה</button>
+        </div>
+    </div>
+
+    <script>
+        function playAvatar() {
+            document.getElementById('status').innerText = "מנגן...";
+        }
+    </script>
+
+</body>
+</html>
