@@ -42,112 +42,136 @@
             transition: transform 0.1s ease;
         }
         .speaking {
-            animation: pulseLip 0.25s infinite alternate;
+            animation: pulseLip 0.2s infinite alternate;
         }
         @keyframes pulseLip {
             0% { transform: scale(1); }
-            100% { transform: scale(1.04); }
+            100% { transform: scale(1.05); }
         }
-        .status-text { font-size: 1.1rem; color: #94a3b8; text-align: center; }
+        .status-text { font-size: 1.1rem; color: #94a3b8; text-align: center; min-height: 30px; }
         .btn {
             background-color: #0284c7;
             color: white;
             border: none;
-            padding: 16px;
-            border-radius: 12px;
+            padding: 18px;
+            border-radius: 14px;
             font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+            user-select: none;
         }
+        .btn:active { background-color: #0369a1; transform: scale(0.98); }
+        .btn.listening { background-color: #ef4444; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="avatar-box">
-            <img id="avatarImg" src="20261107_153609.heic" alt="אבא">
+            <img id="avatarImg" src="avatar.jpg" alt="אבא">
         </div>
 
-        <div id="status" class="status-text">לחצי על הכפתור כדי להתחיל לדבר עם אבא</div>
+        <div id="status" class="status-text">לחצי על הכפתור ודברי עם אבא</div>
 
-        <button id="startBtn" class="btn" onclick="initAvatar()">שלום אבא</button>
+        <button id="talkBtn" class="btn" onclick="toggleListening()">לחצי כדי לדבר</button>
     </div>
-
-    <!-- נגני אודיו נסתרים -->
-    <audio id="audioGreeting" src="Greeting.m4a" preload="auto"></audio>
-    <audio id="audioComfort" src="Comfort.m4a" preload="auto"></audio>
-    <audio id="audioLove" src="Love.m4a" preload="auto"></audio>
 
     <script>
         const avatarImg = document.getElementById('avatarImg');
         const statusText = document.getElementById('status');
-        const startBtn = document.getElementById('startBtn');
-
-        const audioGreeting = document.getElementById('audioGreeting');
-        const audioComfort = document.getElementById('audioComfort');
-        const audioLove = document.getElementById('audioLove');
+        const talkBtn = document.getElementById('talkBtn');
 
         let recognition;
+        let isListening = false;
+        const synth = window.speechSynthesis;
 
-        function initAvatar() {
-            startBtn.style.display = 'none';
-            playMyVoice(audioGreeting, () => {
-                setupRecognition();
-            });
-        }
-
-        function playMyVoice(audioElement, onEndCallback) {
-            avatarImg.classList.add('speaking');
-            statusText.innerText = "אבא מדבר...";
-
-            audioElement.play().catch(e => console.log("Audio play error:", e));
-
-            audioElement.onended = () => {
-                avatarImg.classList.remove('speaking');
-                statusText.innerText = "אבא מקשיב לך...";
-                if (onEndCallback) onEndCallback();
-            };
-        }
-
-        function setupRecognition() {
+        // הגדרת מנוע הדיבור וההקשבה
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                statusText.innerText = "המכשיר אינו תומך בזיהוי קולי כרגע";
-                return;
-            }
-
             recognition = new SpeechRecognition();
             recognition.lang = 'he-IL';
             recognition.continuous = false;
             recognition.interimResults = false;
 
+            recognition.onstart = () => {
+                isListening = true;
+                talkBtn.innerText = "אבא מקשיב... לחצי לסיום";
+                talkBtn.classList.add('listening');
+                statusText.innerText = "דברי עכשיו, אני מקשיב...";
+            };
+
             recognition.onresult = (event) => {
-                const userSpeech = event.results[0][0].transcript.toLowerCase();
-                statusText.innerText = 'שני אמרה: "' + userSpeech + '"';
-                respondToShani(userSpeech);
+                const text = event.results[0][0].transcript;
+                statusText.innerText = 'שני: "' + text + '"';
+                handleShaniInput(text);
             };
 
             recognition.onerror = () => {
-                setTimeout(() => { 
-                    try { recognition.start(); } catch(e){}
-                }, 2000);
+                stopListeningState();
+                statusText.innerText = "לא הצלחתי לשמוע, נסי ללחוץ שוב";
             };
 
-            try { recognition.start(); } catch(e){}
+            recognition.onend = () => {
+                stopListeningState();
+            };
+        } else {
+            statusText.innerText = "הדפדפן אינו תומך בזיהוי קולי";
         }
 
-        function respondToShani(text) {
-            if (text.includes("עצב") || text.includes("עצובה") || text.includes("קשה") || text.includes("רע") || text.includes("בוכה") || text.includes("אבא")) {
-                playMyVoice(audioComfort, () => {
-                    setTimeout(() => { setupRecognition(); }, 1000);
-                });
+        function toggleListening() {
+            if (synth.speaking) synth.cancel();
+
+            if (!isListening) {
+                try { recognition.start(); } catch(e){}
             } else {
-                playMyVoice(audioLove, () => {
-                    setTimeout(() => { setupRecognition(); }, 1000);
-                });
+                try { recognition.stop(); } catch(e){}
             }
+        }
+
+        function stopListeningState() {
+            isListening = false;
+            talkBtn.innerText = "לחצי כדי לדבר";
+            talkBtn.classList.remove('listening');
+        }
+
+        // מוח התשובות הדינמי - תשובות חופשיות בלשון נקבה
+        function handleShaniInput(userText) {
+            const lower = userText.toLowerCase();
+            let response = "";
+
+            if (lower.includes("עצב") || lower.includes("עצובה") || lower.includes("רע") || lower.includes("קשה") || lower.includes("בוכה")) {
+                response = "שני שלי, אבא מרגיש אותך. תזכרי שאת הכי חזקה בעולם, ואני תמיד אוהב אותך ושומר עלייך בלב בכל רגע.";
+            } else if (lower.includes("היי") || lower.includes("שלום") || lower.includes("אבא")) {
+                response = "היי נסיכה שלי! איזה כיף לשמוע אותך. מה שלומך היום ילדה יפה שלי?";
+            } else if (lower.includes("אוהבת") || lower.includes("מתגעגעת")) {
+                response = "גם אבא אוהב אותך הכי בעולם ומתגעגע אלייך נסיכה שלי. את הלב שלי.";
+            } else {
+                response = "אני שומע אותך ילדה שלי. תזכרי שאבא תמיד כאן בשבילך, תמיד מקשיב אלייך ואוהב אותך ללא תנאי.";
+            }
+
+            speakResponse(response);
+        }
+
+        function speakResponse(text) {
+            if (synth.speaking) synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'he-IL';
+            utterance.rate = 0.85; // קצב עדין ואבהי
+
+            utterance.onstart = () => {
+                avatarImg.classList.add('speaking');
+                statusText.innerText = "אבא עונה...";
+            };
+
+            utterance.onend = () => {
+                avatarImg.classList.remove('speaking');
+                statusText.innerText = "לחצי על הכפתור כדי להמשיך לדבר";
+            };
+
+            synth.speak(utterance);
         }
     </script>
 
