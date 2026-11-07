@@ -42,11 +42,11 @@
             transition: transform 0.1s ease;
         }
         .speaking {
-            animation: pulseLip 0.2s infinite alternate;
+            animation: pulseLip 0.25s infinite alternate;
         }
         @keyframes pulseLip {
             0% { transform: scale(1); }
-            100% { transform: scale(1.05); }
+            100% { transform: scale(1.04); }
         }
         .status-text { font-size: 1.1rem; color: #94a3b8; text-align: center; min-height: 30px; }
         .btn {
@@ -70,24 +70,32 @@
 
     <div class="container">
         <div class="avatar-box">
-            <img id="avatarImg" src="avatar.jpg" alt="אבא">
+            <img id="avatarImg" src="20261107_153609.heic" alt="אבא">
         </div>
 
-        <div id="status" class="status-text">לחצי על הכפתור ודברי עם אבא</div>
+        <div id="status" class="status-text">לחצי על הכפתור כדי לדבר עם אבא</div>
 
         <button id="talkBtn" class="btn" onclick="toggleListening()">לחצי כדי לדבר</button>
     </div>
+
+    <!-- נגני הקול האמיתיים שלך -->
+    <audio id="audioGreeting" src="Greeting.m4a" preload="auto"></audio>
+    <audio id="audioComfort" src="Comfort.m4a" preload="auto"></audio>
+    <audio id="audioLove" src="Love.m4a" preload="auto"></audio>
 
     <script>
         const avatarImg = document.getElementById('avatarImg');
         const statusText = document.getElementById('status');
         const talkBtn = document.getElementById('talkBtn');
 
+        const audioGreeting = document.getElementById('audioGreeting');
+        const audioComfort = document.getElementById('audioComfort');
+        const audioLove = document.getElementById('audioLove');
+
         let recognition;
         let isListening = false;
-        const synth = window.speechSynthesis;
+        let isFirstTime = true;
 
-        // הגדרת מנוע הדיבור וההקשבה
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
@@ -105,12 +113,13 @@
             recognition.onresult = (event) => {
                 const text = event.results[0][0].transcript;
                 statusText.innerText = 'שני: "' + text + '"';
+                stopListeningState();
                 handleShaniInput(text);
             };
 
             recognition.onerror = () => {
                 stopListeningState();
-                statusText.innerText = "לא הצלחתי לשמוע, נסי ללחוץ שוב";
+                statusText.innerText = "לא הצלחתי לשמוע, לחצי שוב כדי לדבר";
             };
 
             recognition.onend = () => {
@@ -121,7 +130,11 @@
         }
 
         function toggleListening() {
-            if (synth.speaking) synth.cancel();
+            if (isFirstTime) {
+                isFirstTime = false;
+                playMyAudio(audioGreeting);
+                return;
+            }
 
             if (!isListening) {
                 try { recognition.start(); } catch(e){}
@@ -136,42 +149,26 @@
             talkBtn.classList.remove('listening');
         }
 
-        // מוח התשובות הדינמי - תשובות חופשיות בלשון נקבה
         function handleShaniInput(userText) {
             const lower = userText.toLowerCase();
-            let response = "";
 
             if (lower.includes("עצב") || lower.includes("עצובה") || lower.includes("רע") || lower.includes("קשה") || lower.includes("בוכה")) {
-                response = "שני שלי, אבא מרגיש אותך. תזכרי שאת הכי חזקה בעולם, ואני תמיד אוהב אותך ושומר עלייך בלב בכל רגע.";
-            } else if (lower.includes("היי") || lower.includes("שלום") || lower.includes("אבא")) {
-                response = "היי נסיכה שלי! איזה כיף לשמוע אותך. מה שלומך היום ילדה יפה שלי?";
-            } else if (lower.includes("אוהבת") || lower.includes("מתגעגעת")) {
-                response = "גם אבא אוהב אותך הכי בעולם ומתגעגע אלייך נסיכה שלי. את הלב שלי.";
+                playMyAudio(audioComfort);
             } else {
-                response = "אני שומע אותך ילדה שלי. תזכרי שאבא תמיד כאן בשבילך, תמיד מקשיב אלייך ואוהב אותך ללא תנאי.";
+                playMyAudio(audioLove);
             }
-
-            speakResponse(response);
         }
 
-        function speakResponse(text) {
-            if (synth.speaking) synth.cancel();
+        function playMyAudio(audioElement) {
+            avatarImg.classList.add('speaking');
+            statusText.innerText = "אבא מדבר...";
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'he-IL';
-            utterance.rate = 0.85; // קצב עדין ואבהי
+            audioElement.play().catch(e => console.log("Audio play error:", e));
 
-            utterance.onstart = () => {
-                avatarImg.classList.add('speaking');
-                statusText.innerText = "אבא עונה...";
-            };
-
-            utterance.onend = () => {
+            audioElement.onended = () => {
                 avatarImg.classList.remove('speaking');
                 statusText.innerText = "לחצי על הכפתור כדי להמשיך לדבר";
             };
-
-            synth.speak(utterance);
         }
     </script>
 
